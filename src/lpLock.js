@@ -10,7 +10,7 @@
  *   2. TIME_LOCKED（定时锁）：LP 锁进 UNCX/Streamflow 等锁仓器，有到期时间。要标"到期时间 + 是否已过"。
  *   3. UNLOCKED（未锁，可 rug）：LP 代币还在部署者/未知钱包，随时能撤。
  *
- * 发现 LP 池的两级姿势（军长拍板）：
+ * 发现 LP 池的两步流程：
  *   ① 定向：getProgramAccounts + dataSize 过滤 + memcmp(offset 400/432 搜 mint) → 定位 pool 状态账户
  *   ② 锁仓：从 pool 账户读 lpMint(464) / baseVault(336) / quoteVault(368)，再判断 LP 代币的归属
  */
@@ -44,7 +44,7 @@ const RAYDIUM_V4 = {
 
 // ===== 死地址（LP 烧币 = 永久锁）=====
 const BURN_ADDRESSES = {
-  // Solana 官方 incinerator（烧币地址）—— 唯一规范烧毁地址，军长已核对
+  // Solana 官方 incinerator（烧币地址）—— 唯一规范烧毁地址
   "1nc1nerator11111111111111111111111111111111": "Solana Incinerator",
   "11111111111111111111111111111111": "System Program (zero address)",
 };
