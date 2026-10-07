@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+# build / debug artifacts
+*.log
+*.tmp
+_v_*.txt
+# OS
+.DS_Store
+Thumbs.db
+# env：本地 RPC key 不入库；模板 .env.example 保留入库
+.env
+.env.local
+!.env.example
