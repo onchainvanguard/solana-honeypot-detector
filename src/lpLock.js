@@ -121,16 +121,13 @@ function readPubkey(buf, offset) {
  *
  * @param {Connection} connection
  * @param {string} mintAddress - 代币 mint
- * @returns {Promise<Array<{poolAddress, baseMint, quoteMint, lpMint, baseVault, quoteVault, status, amm}>>}
+ * @returns {Promise<{pools: Array<{poolAddress, baseMint, quoteMint, lpMint, baseVault, quoteVault, status, amm}>, searchErrors: string[]}>}
+ *          searchErrors 非空 = 搜索本身没跑成（RPC 拦截/失败），不能当"没有池"处理。
  */
 export async function discoverPools(connection, mintAddress) {
-  const pools = [];
-
   // 优先 Raydium AMM v4（Solana 主流 LP 场所）
-  const raydiumV4 = await discoverRaydiumV4Pools(connection, mintAddress);
-  pools.push(...raydiumV4);
-
-  return pools;
+  const { pools, searchErrors } = await discoverRaydiumV4Pools(connection, mintAddress);
+  return { pools, searchErrors };
 }
 
 /**
@@ -139,7 +136,8 @@ export async function discoverPools(connection, mintAddress) {
  */
 async function discoverRaydiumV4Pools(connection, mintAddress) {
   const programId = new PublicKey(AMM_PROGRAMS.RAYDIUM_V4);
-  const results = [];
+  const pools = [];
+  const searchErrors = [];
 
   // 分别按 baseMint 和 quoteMint 搜（两次 memcmp，定向，不扫全量）
   for (const offset of [RAYDIUM_V4.baseMint, RAYDIUM_V4.quoteMint]) {
@@ -153,26 +151,27 @@ async function discoverRaydiumV4Pools(connection, mintAddress) {
         dataSlice: { offset: 0, length: 496 }, // 覆盖到 lpMint(464)+32
       });
       for (const acc of accounts) {
-        results.push({
+        pools.push({
           poolAddress: acc.pubkey.toBase58(),
           amm: "Raydium AMM v4",
           ...parseRaydiumV4State(acc.account.data),
         });
       }
     } catch (e) {
-      // 某个 offset 查询失败不阻断，记录后继续
-      results.push({ poolAddress: null, amm: "Raydium AMM v4", error: e.message });
+      // 查询失败不阻断，但必须如实上抛——「查询被拦」≠「没有池子」，
+      // 上层要能区分这两种状态（宁缺毋假：不能把 RPC 拦截冒充成"没找到池"）
+      searchErrors.push(e.message);
     }
   }
 
   // 去重（一个池子可能同时命中 baseMint 和 quoteMint）
   const seen = new Set();
-  return results.filter((p) => {
-    if (!p.poolAddress) return false;
+  const deduped = pools.filter((p) => {
     if (seen.has(p.poolAddress)) return false;
     seen.add(p.poolAddress);
     return true;
   });
+  return { pools: deduped, searchErrors };
 }
 
 /**
@@ -499,9 +498,18 @@ function formatRemaining(sec) {
  * 汇总：给定代币 mint，返回 LP 锁的完整检测结果。
  */
 export async function detectLpLock(connection, mintAddress) {
-  const pools = await discoverPools(connection, mintAddress);
+  const { pools, searchErrors } = await discoverPools(connection, mintAddress);
 
   if (pools.length === 0) {
+    if (searchErrors.length > 0) {
+      // 搜索本身失败（免费公共节点常拦 getProgramAccounts）——
+      // 「没查成」≠「没有池」，如实区分，不冒充结论（宁缺毋假）
+      return {
+        status: "RPC_BLOCKED",
+        note: `LP pool search FAILED on this RPC (${searchErrors[0]}). Cannot tell "no pool" from "search blocked" — treat as UNKNOWN. Use an RPC that allows getProgramAccounts (e.g. Helius) for full LP lock coverage.`,
+        poolsFound: 0,
+      };
+    }
     return {
       status: "NO_POOL_FOUND",
       note: "no Raydium AMM v4 pool found for this mint (could be on Orca/Meteora, or no liquidity)",

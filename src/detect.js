@@ -562,6 +562,8 @@ function analyzeLpLockRisk(lpLockResult) {
   }
 
   switch (lpLockResult.status) {
+    case "RPC_BLOCKED":
+      return { status: "UNKNOWN", note: "LP 池搜索被当前 RPC 拦截或失败（免费公共节点常拦 getProgramAccounts）——无法区分「真没池」与「没查成」，按宁缺毋假标记 unknown；换支持该方法的 RPC（如 Helius）可得完整 LP 锁状态。" };
     case "NO_POOL_FOUND":
       return { status: "UNKNOWN", note: "未发现 Raydium AMM v4 池（可能在 Orca/Meteora，或未上流动性）—— 查不到不编，标记 unknown。" };
     case "UNKNOWN":
