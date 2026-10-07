@@ -1,0 +1,26 @@
+{
+  "name": "solana-honeypot-detector",
+  "version": "0.1.0",
+  "description": "OnChain Vanguard — Solana SPL honeypot / freeze / backdoor detector. Input a token mint, output a verifiable risk report.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node src/index.js"
+  },
+  "keywords": [
+    "solana",
+    "spl-token",
+    "honeypot",
+    "rug-pull",
+    "onchain-forensics",
+    "risk-intelligence"
+  ],
+  "author": "OnChain Vanguard",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/spl-token": "^0.4.6",
+    "@solana/web3.js": "^1.95.0",
+    "bs58": "^5.0.0"
+  }
+}
