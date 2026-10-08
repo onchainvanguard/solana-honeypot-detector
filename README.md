@@ -111,6 +111,7 @@ Each golden sample pins one detection path:
 - [GOLD rug pull](reports/gold-rug-2026.md) — a social-engineering rug; the tool reports what it knows and marks the rest unknown instead of over-flagging.
 - [LP lock expired, not withdrawn](reports/lp-lock-expired.md) — detectable three days before the rug.
 - [BONK permanent lock](reports/bonk-permanent-lock.md) — burn type B identification.
+- [CATFI rug pull](reports/catfi-rug-2026.md) — liquidity-removal rug on a Raydium v4 pool; first DEX rug pull criminally prosecuted in South Korea.
 
 ## Known limitations
 
